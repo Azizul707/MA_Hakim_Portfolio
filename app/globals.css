@@ -1,0 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 240 10% 8%;
+    --muted: 40 10% 92%;
+    --muted-foreground: 240 5% 50%;
+    --accent: 42 80% 60%;
+    --accent-foreground: 240 10% 8%;
+    --surface: 40 15% 95%;
+    --border: 40 10% 88%;
+  }
+
+  .dark {
+    --background: 240 12% 6%;
+    --foreground: 40 8% 92%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 240 5% 55%;
+    --accent: 42 80% 60%;
+    --accent-foreground: 240 10% 8%;
+    --surface: 240 10% 9%;
+    --border: 240 8% 18%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-foreground;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto max-w-[1200px] px-5 sm:px-8;
+  }
+
+  .section-spacing {
+    @apply py-20 md:py-28;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-accent {
+    @apply bg-gradient-to-br from-accent via-amber-400 to-amber-300 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
