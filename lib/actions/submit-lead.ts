@@ -26,21 +26,25 @@ export async function submitPortfolioLead(
     // Insert into Supabase
     const supabase = await createServerSupabaseClient();
 
-    const { error } = await supabase.from("portfolio_leads").insert({
-      name: data.name,
-      email: data.email,
-      business_name: data.business_name,
-      industry: data.industry,
-      website: data.website || null,
-      current_challenge: data.current_challenge,
-      project_goal: data.project_goal,
-      budget: data.budget || null,
-      message: data.message,
-      source_page: data.source_page || "/contact",
-      status: "NEW",
-      priority: "NORMAL",
-      source: "Portfolio Website",
-    });
+    const { data: lead, error } = await supabase
+      .from("portfolio_leads")
+      .insert({
+        name: data.name,
+        email: data.email,
+        business_name: data.business_name,
+        industry: data.industry,
+        website: data.website || null,
+        current_challenge: data.current_challenge,
+        project_goal: data.project_goal,
+        budget: data.budget || null,
+        message: data.message,
+        source_page: data.source_page || "/contact",
+        status: "NEW",
+        priority: "NORMAL",
+        source: "Portfolio Website",
+      })
+      .select("id")
+      .single();
 
     if (error) {
       console.error("Supabase insert error:", error);
@@ -48,6 +52,21 @@ export async function submitPortfolioLead(
         success: false,
         message: "Something went wrong saving your message. Please try again.",
       };
+    }
+
+    // Log the initial event
+    const { error: eventError } = await supabase
+      .from("lead_events")
+      .insert({
+        lead_id: lead.id,
+        event_type: "lead_created",
+        new_value: "Lead submitted via portfolio contact form",
+        created_by: "system",
+      });
+
+    if (eventError) {
+      console.error("Supabase event insert error:", eventError);
+      // Lead saved, event is non-critical — don't fail the submission
     }
 
     return {
