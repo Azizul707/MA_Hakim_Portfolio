@@ -349,7 +349,7 @@ export default function AboutPage() {
                 </h1>
                 <div className="mt-5 max-w-[650px] space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
                   <p>
-                    I&apos;m MA Hakim, a Business Automation Specialist focused on
+                    I&apos;m Md Azizul Hakim, a Business Automation Specialist focused on
                     designing AI-powered systems that help service businesses
                     reduce manual work, improve operational visibility, and create
                     more efficient workflows.
