@@ -43,8 +43,9 @@ app/ components/ content/ lib/ types/ public/
 
 # Content Collections
 
-/content/projects /content/services /content/case-studies
-/content/testimonials
+/content/testimonials /content/case-studies /content/services /content/shared
+
+Projects and Solution Breakdowns are managed via Admin Dashboard → Content.
 
 # Animation
 

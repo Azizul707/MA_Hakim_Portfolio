@@ -7,25 +7,21 @@ import { Container, Section } from "@/components/ui/container";
 import { Badge } from "@/components/ui/typography";
 import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
-import { projects } from "@/content/projects";
-import { caseStudies } from "@/content/case-studies";
-import { ArrowLeft, ArrowRight, TrendingUp, Clock, Clock4 } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  getPublishedProjectBySlug,
+  getPublishedSolutionByProjectId,
+  getPublishedProjects,
+} from "@/lib/actions/projects";
+import type { WorkflowStep } from "@/types/project";
 
-const metricIcons = {
-  TrendingUp: <TrendingUp className="h-3.5 w-3.5" />,
-  Clock: <Clock className="h-3.5 w-3.5" />,
-  Clock4: <Clock4 className="h-3.5 w-3.5" />,
-};
-
-export function generateStaticParams() {
-  return projects
-    .filter(
-      (p) =>
-        p.slug !== "hvac-lead-intelligence" &&
-        p.slug !== "whatsapp-customer-hub" &&
-        p.slug !== "document-intelligence-system"
-    )
-    .map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  try {
+    const { projects } = await getPublishedProjects();
+    return projects.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
@@ -34,11 +30,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const project = projects.find((p) => p.slug === slug);
+  const project = await getPublishedProjectBySlug(slug);
   if (!project) return { title: "Project Not Found" };
+
   return {
-    title: project.title,
-    description: project.summary,
+    title: `${project.title} | MA Hakim`,
+    description: project.short_description,
+    openGraph: {
+      title: `${project.title} | MA Hakim`,
+      description: project.short_description,
+    },
   };
 }
 
@@ -48,17 +49,78 @@ export default async function ProjectDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const project = projects.find((p) => p.slug === slug);
+  const project = await getPublishedProjectBySlug(slug);
   if (!project) notFound();
 
-  const relatedCaseStudy = caseStudies.find(
-    (cs) => cs.relatedProject === project.slug
-  );
+  const solution = await getPublishedSolutionByProjectId(project.id);
+
+  const workflowSteps: WorkflowStep[] = solution?.workflow
+    ? Array.isArray(solution.workflow)
+      ? solution.workflow
+      : typeof solution.workflow === "string"
+        ? JSON.parse(solution.workflow)
+        : []
+    : [];
+
+  const techStack: string[] = solution?.technology_stack
+    ? Array.isArray(solution.technology_stack)
+      ? solution.technology_stack
+      : typeof solution.technology_stack === "string"
+        ? JSON.parse(solution.technology_stack)
+        : []
+    : [];
+
+  if (!solution) {
+    // Fallback: show basic project info even without a solution breakdown
+    return (
+      <>
+        <Navbar />
+        <main>
+          <Section className="pt-28">
+            <Container>
+              <Link
+                href="/projects"
+                className="mb-8 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Projects
+              </Link>
+
+              <div className="mx-auto max-w-3xl text-center">
+                {project.category && <Badge className="mb-4">{project.category}</Badge>}
+                <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+                  {project.title}
+                </h1>
+                <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+                  {project.short_description}
+                </p>
+              </div>
+
+              <div className="mx-auto mt-16 max-w-3xl text-center">
+                <Button asChild>
+                  <Link href="/contact">
+                    Interested in This Solution?
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </Container>
+          </Section>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  const coverSrc = project.cover_image
+    ? `/projects/${project.cover_image.replace(/^\//, "")}`
+    : null;
 
   return (
     <>
       <Navbar />
       <main>
+        {/* Hero */}
         <Section className="pt-28">
           <Container>
             <Link
@@ -69,82 +131,76 @@ export default async function ProjectDetailPage({
               Back to Projects
             </Link>
 
+            {coverSrc && (
+              <div className="mb-12 overflow-hidden rounded-xl border border-border">
+                <img
+                  src={coverSrc}
+                  alt={`${project.title} cover`}
+                  className="w-full object-cover"
+                />
+              </div>
+            )}
+
             <div className="mx-auto max-w-3xl text-center">
-              <Badge className="mb-4">{project.industry}</Badge>
+              {project.category && <Badge className="mb-4">{project.category}</Badge>}
               <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-                {project.title}
+                {solution.hero_title || project.title}
               </h1>
-              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                {project.summary}
-              </p>
+              {solution.hero_subtitle && (
+                <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+                  {solution.hero_subtitle}
+                </p>
+              )}
             </div>
 
             <div className="mx-auto mt-16 max-w-3xl space-y-12">
-              <div>
-                <h2 className="font-display text-xl font-semibold tracking-tight">
-                  Business Challenge
-                </h2>
-                <p className="mt-3 leading-relaxed text-muted-foreground">
-                  {project.problem}
-                </p>
-              </div>
-
-              <div>
-                <h2 className="font-display text-xl font-semibold tracking-tight">
-                  Automation Strategy
-                </h2>
-                <p className="mt-3 leading-relaxed text-muted-foreground">
-                  {project.solution}
-                </p>
-              </div>
-
-              {project.implementation && (
-                <div>
-                  <h2 className="font-display text-xl font-semibold tracking-tight">
-                    Implementation
-                  </h2>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
-                    {project.implementation}
-                  </p>
-                </div>
+              {/* Overview */}
+              {solution.overview && (
+                <SectionBlock title="Overview">
+                  {solution.overview}
+                </SectionBlock>
               )}
 
-              <div>
-                <h2 className="font-display text-xl font-semibold tracking-tight">
-                  Business Results
-                </h2>
-                {project.businessImpact && project.businessImpact.length > 0 ? (
-                  <ul className="mt-3 space-y-2">
-                    {project.businessImpact.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground"
-                      >
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/60" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 leading-relaxed text-muted-foreground">
-                    {project.result}
-                  </p>
-                )}
-              </div>
+              {/* Business Problem */}
+              {solution.business_problem && (
+                <SectionBlock title="Business Challenge">
+                  {solution.business_problem}
+                </SectionBlock>
+              )}
 
-              {project.gallery.length > 0 && (
+              {/* Solution */}
+              {solution.solution && (
+                <SectionBlock title="Solution">
+                  {solution.solution}
+                </SectionBlock>
+              )}
+
+              {/* Workflow Timeline */}
+              {workflowSteps.length > 0 && (
                 <div>
                   <h2 className="font-display text-xl font-semibold tracking-tight">
-                    Gallery
+                    How It Works
                   </h2>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    {project.gallery.map((img, i) => (
-                      <div
-                        key={i}
-                        className="aspect-[4/3] overflow-hidden rounded-xl border border-border bg-surface"
-                      >
-                        <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                          {project.title} — Screenshot {i + 1}
+                  <div className="mt-6 space-y-6">
+                    {workflowSteps.map((step, i) => (
+                      <div key={i} className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                            {i + 1}
+                          </div>
+                          {i < workflowSteps.length - 1 && (
+                            <div className="mt-1 h-full w-px bg-border" />
+                          )}
+                        </div>
+                        <div className="flex-1 pb-6">
+                          <h3 className="font-display text-base font-semibold">
+                            {step.title}
+                          </h3>
+                          {step.description && (
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                              {step.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -152,49 +208,99 @@ export default async function ProjectDetailPage({
                 </div>
               )}
 
-              <div>
-                <h2 className="font-display text-xl font-semibold tracking-tight">
-                  Technologies
-                </h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {project.technologies.map((tech) => (
-                    <Tag key={tech}>{tech}</Tag>
-                  ))}
+              {/* Business Benefits */}
+              {solution.business_benefits && (
+                <SectionBlock title="Business Benefits">
+                  {solution.business_benefits}
+                </SectionBlock>
+              )}
+
+              {/* ROI Example */}
+              {solution.roi_example && (
+                <SectionBlock title="Return on Investment">
+                  {solution.roi_example}
+                </SectionBlock>
+              )}
+
+              {/* Technology Stack */}
+              {techStack.length > 0 && (
+                <div>
+                  <h2 className="font-display text-xl font-semibold tracking-tight">
+                    Technology Stack
+                  </h2>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {techStack.map((tech) => (
+                      <Tag key={tech}>{tech}</Tag>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Ideal For */}
+              {solution.ideal_for && (
+                <SectionBlock title="Who This Is For">
+                  {solution.ideal_for}
+                </SectionBlock>
+              )}
             </div>
 
-            {relatedCaseStudy && (
-              <div className="mx-auto mt-16 max-w-3xl">
-                <Link
-                  href={`/case-studies/${relatedCaseStudy.slug}`}
-                  className="group flex items-center justify-between rounded-xl border border-border bg-surface p-6 transition-all duration-300 hover:border-accent/30 sm:p-8"
-                >
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Related Case Study
-                    </p>
-                    <h3 className="mt-1 font-display text-lg font-semibold tracking-tight transition-colors group-hover:text-accent">
-                      {relatedCaseStudy.title}
-                    </h3>
-                  </div>
-                  <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                </Link>
+            {/* CTA */}
+            {(solution.cta_title || solution.cta_description) && (
+              <div className="mx-auto mt-16 max-w-3xl rounded-xl border border-border bg-surface p-8 text-center sm:p-12">
+                {solution.cta_title && (
+                  <h2 className="font-display text-2xl font-semibold tracking-tight">
+                    {solution.cta_title}
+                  </h2>
+                )}
+                {solution.cta_description && (
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {solution.cta_description}
+                  </p>
+                )}
+                <div className="mt-8">
+                  <Button asChild>
+                    <Link href="/contact">
+                      Tell Me About Your Business
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             )}
 
-            <div className="mx-auto mt-16 max-w-3xl text-center">
-              <Button asChild>
-                <Link href="/contact">
-                  Tell Me About Your Business
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+            {!solution.cta_title && (
+              <div className="mx-auto mt-16 max-w-3xl text-center">
+                <Button asChild>
+                  <Link href="/contact">
+                    Tell Me About Your Business
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            )}
           </Container>
         </Section>
       </main>
       <Footer />
     </>
+  );
+}
+
+function SectionBlock({
+  title,
+  children,
+}: {
+  title: string;
+  children: string;
+}) {
+  return (
+    <div>
+      <h2 className="font-display text-xl font-semibold tracking-tight">
+        {title}
+      </h2>
+      <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </div>
+    </div>
   );
 }

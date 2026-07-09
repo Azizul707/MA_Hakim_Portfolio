@@ -6,6 +6,8 @@ import { Container, Section } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { ProjectsGrid } from "@/components/sections/projects-grid";
+import type { ProjectCardData } from "@/components/sections/project-card";
+import { getProjectsForPublic } from "@/lib/actions/projects";
 import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -14,7 +16,24 @@ export const metadata: Metadata = {
     "Explore AI-powered automation projects designed to help HVAC and local service businesses improve lead management, customer communication, and operational efficiency.",
 };
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  let projects: ProjectCardData[] = [];
+  try {
+    const raw = await getProjectsForPublic();
+    projects = (raw ?? []).map((p: any) => ({
+      title: p.title,
+      slug: p.slug,
+      category: p.category || "",
+      short_description: p.short_description,
+      cover_image: p.cover_image,
+      live_demo_url: p.live_demo_url,
+      technology_stack: (p.solution?.technology_stack as string[]) || [],
+      featured: p.featured,
+    }));
+  } catch {
+    projects = [];
+  }
+
   return (
     <>
       <Navbar />
@@ -37,7 +56,7 @@ export default function ProjectsPage() {
               </p>
             </div>
 
-            <ProjectsGrid />
+            <ProjectsGrid projects={projects} />
           </Container>
         </Section>
 
