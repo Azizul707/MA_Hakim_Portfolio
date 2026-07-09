@@ -11,28 +11,8 @@ import { ProcessSection } from "@/components/sections/process-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { FAQSection } from "@/components/sections/faq-section";
 import { ContactCTA } from "@/components/sections/contact-cta";
-import { getProjectsForPublic } from "@/lib/actions/projects";
-import type { ProjectCardData } from "@/components/sections/project-card";
 
-export default async function HomePage() {
-  let featuredProjects: ProjectCardData[] = [];
-
-  try {
-    const raw = await getProjectsForPublic();
-    featuredProjects = (raw ?? []).map((p: any) => ({
-      title: p.title,
-      slug: p.slug,
-      category: p.category || "",
-      short_description: p.short_description,
-      cover_image: p.cover_image,
-      live_demo_url: p.live_demo_url,
-      technology_stack: (p.solution?.technology_stack as string[]) || [],
-      featured: p.featured,
-    }));
-  } catch {
-    // Projects table may not exist yet — render without featured projects
-  }
-
+export default function HomePage() {
   return (
     <>
       <Navbar />
@@ -42,7 +22,7 @@ export default async function HomePage() {
         <ProblemsSection />
         <ServicesSection featured />
         <WhyWorkWithMe />
-        <FeaturedProjects projects={featuredProjects} />
+        <FeaturedProjects />
         <CaseStudiesSection />
         <ProcessSection />
         <TestimonialsSection />

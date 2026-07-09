@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS projects (
   category TEXT NOT NULL DEFAULT '',
   short_description TEXT NOT NULL DEFAULT '',
   cover_image TEXT,
+  hero_image TEXT,
+  gallery_images JSONB DEFAULT '[]'::jsonb,
   github_url TEXT,
   live_demo_url TEXT,
   featured BOOLEAN NOT NULL DEFAULT false,
@@ -66,6 +68,10 @@ CREATE POLICY "Public can read published solution breakdowns"
 
 -- RLS: Service role can read/write all (bypasses RLS)
 -- We use the service role client for admin operations, so no additional policies needed for admin
+
+-- Add gallery support columns to existing tables
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS hero_image TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS gallery_images JSONB DEFAULT '[]'::jsonb;
 
 -- Auto-update updated_at on row modification
 CREATE OR REPLACE FUNCTION update_updated_at_column()

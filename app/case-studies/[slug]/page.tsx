@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/typography";
 import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { caseStudies } from "@/content/case-studies";
-import { getPublishedProjectBySlug } from "@/lib/actions/projects";
+import { projects } from "@/content/projects";
 import {
   ArrowLeft,
   ArrowRight,
@@ -54,9 +54,7 @@ export default async function CaseStudyDetailPage({
   const study = caseStudies.find((cs) => cs.slug === slug);
   if (!study) notFound();
 
-  const relatedProject = study.relatedProject
-    ? await getPublishedProjectBySlug(study.relatedProject)
-    : null;
+  const relatedProject = projects.find((p) => p.slug === study.relatedProject);
 
   return (
     <>

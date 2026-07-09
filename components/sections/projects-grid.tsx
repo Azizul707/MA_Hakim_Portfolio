@@ -1,55 +1,48 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ProjectCard, type ProjectCardData } from "@/components/sections/project-card";
+import { projects } from "@/content/projects";
+import { ProjectCard } from "@/components/sections/project-card";
 
-interface ProjectsGridProps {
-  projects: ProjectCardData[];
-}
+const filterOptions = [
+  { label: "All", value: "all" },
+  { label: "HVAC", value: "HVAC" },
+  { label: "Local Services", value: "Local Services" },
+  { label: "Lead Management", value: "Lead Management" },
+  { label: "Customer Communication", value: "Customer Communication" },
+  { label: "AI Automation", value: "AI Automation" },
+  { label: "Workflow Automation", value: "Workflow Automation" },
+];
 
-export function ProjectsGrid({ projects }: ProjectsGridProps) {
+export function ProjectsGrid() {
   const [activeFilter, setActiveFilter] = useState("all");
-
-  // Build unique categories for filter buttons
-  const categories = useMemo(() => {
-    const cats = new Set(projects.map((p) => p.category).filter(Boolean));
-    return Array.from(cats);
-  }, [projects]);
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return projects;
-    return projects.filter((p) => p.category === activeFilter);
-  }, [activeFilter, projects]);
+    return projects.filter((p) => {
+      if (p.industry === activeFilter) return true;
+      if (p.tags?.includes(activeFilter)) return true;
+      return false;
+    });
+  }, [activeFilter]);
 
   return (
     <>
-      {categories.length > 0 && (
-        <div className="mb-10 flex flex-wrap justify-center gap-2">
+      <div className="mb-10 flex flex-wrap justify-center gap-2">
+        {filterOptions.map((filter) => (
           <button
-            onClick={() => setActiveFilter("all")}
+            key={filter.value}
+            onClick={() => setActiveFilter(filter.value)}
             className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-300 ${
-              activeFilter === "all"
+              activeFilter === filter.value
                 ? "border-accent bg-accent text-accent-foreground"
                 : "border-border bg-surface text-muted-foreground hover:border-accent/40 hover:text-foreground"
             }`}
           >
-            All
+            {filter.label}
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-300 ${
-                activeFilter === cat
-                  ? "border-accent bg-accent text-accent-foreground"
-                  : "border-border bg-surface text-muted-foreground hover:border-accent/40 hover:text-foreground"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
 
       {filtered.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2">

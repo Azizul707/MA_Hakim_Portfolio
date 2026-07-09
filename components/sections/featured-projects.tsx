@@ -4,17 +4,12 @@ import Link from "next/link";
 import { Container, Section } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
-import { ProjectCard, type ProjectCardData } from "@/components/sections/project-card";
+import { projects } from "@/content/projects";
+import { ProjectCard } from "@/components/sections/project-card";
 import { ArrowRight } from "lucide-react";
 
-interface FeaturedProjectsProps {
-  projects: ProjectCardData[];
-}
-
-export function FeaturedProjects({ projects }: FeaturedProjectsProps) {
+export function FeaturedProjects() {
   const featured = projects.filter((p) => p.featured);
-
-  if (featured.length === 0) return null;
 
   return (
     <Section className="bg-surface/20">

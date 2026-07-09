@@ -3,11 +3,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Save, Loader2, Check, AlertCircle, ArrowLeft, Plus } from "lucide-react";
+import { Save, Loader2, Check, AlertCircle, ArrowLeft, Plus, ShieldAlert } from "lucide-react";
 import type { Project, ProjectFormData, ProjectStatus } from "@/types/project";
 import { PROJECT_STATUS_VALUES, PROJECT_STATUS_LABELS } from "@/types/project";
 import { updateProject, createProject } from "@/lib/actions/projects";
 import { cn } from "@/lib/utils";
+
+const FLAGSHIP_SLUGS = new Set([
+  "hvac-lead-intelligence",
+  "whatsapp-customer-hub",
+  "document-intelligence-system",
+]);
 
 interface ProjectFormProps {
   project?: Project | null;
@@ -36,6 +42,10 @@ export function ProjectForm({ project, isNew }: ProjectFormProps) {
     project?.short_description || ""
   );
   const [coverImage, setCoverImage] = useState(project?.cover_image || "");
+  const [heroImage, setHeroImage] = useState(project?.hero_image || "");
+  const [galleryImagesStr, setGalleryImagesStr] = useState(
+    project?.gallery_images?.length ? JSON.stringify(project.gallery_images) : "[]"
+  );
   const [githubUrl, setGithubUrl] = useState(project?.github_url || "");
   const [liveDemoUrl, setLiveDemoUrl] = useState(project?.live_demo_url || "");
   const [featured, setFeatured] = useState(project?.featured || false);
@@ -43,6 +53,8 @@ export function ProjectForm({ project, isNew }: ProjectFormProps) {
   const [status, setStatus] = useState<ProjectStatus>(
     project?.status || "draft"
   );
+  const isFlagship = !isNew && project && FLAGSHIP_SLUGS.has(project.slug);
+
   const [flash, setFlash] = useState<{
     type: "success" | "error";
     message: string;
@@ -72,12 +84,27 @@ export function ProjectForm({ project, isNew }: ProjectFormProps) {
       return;
     }
 
+    if (isFlagship) {
+      setFlash({ type: "error", message: "Flagship projects cannot be modified through the CMS." });
+      return;
+    }
+
+    // Validate gallery_images JSON
+    try {
+      JSON.parse(galleryImagesStr);
+    } catch {
+      setFlash({ type: "error", message: "Gallery images must be valid JSON." });
+      return;
+    }
+
     const formData = {
       title: title.trim(),
       slug: slug.trim(),
       category: category.trim(),
       short_description: shortDescription.trim(),
       cover_image: coverImage.trim(),
+      hero_image: heroImage.trim(),
+      gallery_images: galleryImagesStr,
       github_url: githubUrl.trim(),
       live_demo_url: liveDemoUrl.trim(),
       featured,
@@ -112,6 +139,23 @@ export function ProjectForm({ project, isNew }: ProjectFormProps) {
         <ArrowLeft className="h-4 w-4" />
         Back to projects
       </Link>
+
+      {/* Flagship warning */}
+      {isFlagship && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <div>
+            <p className="text-sm font-medium text-amber-500">
+              Protected Flagship Project
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-500/80">
+              This is a handcrafted flagship project. Its content cannot be modified
+              through the CMS. Only future (non-flagship) projects added via the CMS
+              appear in the &ldquo;More Projects&rdquo; section on the public projects page.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main form */}
@@ -206,6 +250,70 @@ export function ProjectForm({ project, isNew }: ProjectFormProps) {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Enter the filename. The app will use /projects/{"{filename}"}
                 </p>
+              </div>
+
+              <div>
+                <label htmlFor="heroImage" className="mb-1.5 block text-sm font-medium">
+                  Hero Image
+                </label>
+                <input
+                  id="heroImage"
+                  value={heroImage}
+                  onChange={(e) => setHeroImage(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/30 font-mono text-xs"
+                  placeholder="hvac-hero.webp"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Large hero image for the project detail page. Uses /projects/{"{filename}"}
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="galleryImages" className="mb-1.5 block text-sm font-medium">
+                  Gallery Images (JSON array)
+                </label>
+                <textarea
+                  id="galleryImages"
+                  value={galleryImagesStr}
+                  onChange={(e) => setGalleryImagesStr(e.target.value)}
+                  rows={3}
+                  className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-xs outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-accent/50 focus:ring-1 focus:ring-accent/30"
+                  placeholder='["dashboard-screenshot.webp", "workflow-diagram.webp", "report-view.webp"]'
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Array of filenames. Each resolves to {"/projects/{filename}"}. Enter valid JSON.
+                </p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                    Show copy-paste examples
+                  </summary>
+                  <div className="mt-2 space-y-2 rounded-lg border border-border bg-background p-3">
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-foreground">Single image:</p>
+                      <code className="block rounded bg-surface px-2 py-1 text-xs text-muted-foreground select-all">
+                        ["dashboard-overview.webp"]
+                      </code>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-foreground">Multiple images:</p>
+                      <code className="block rounded bg-surface px-2 py-1 text-xs text-muted-foreground select-all">
+                        ["dashboard-overview.png","workflow-diagram.png","analytics-report.png","mobile-view.png"]
+                      </code>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-foreground">Mixed formats:</p>
+                      <code className="block rounded bg-surface px-2 py-1 text-xs text-muted-foreground select-all">
+                        ["hero-screenshot.webp","pipeline-flow.png","email-template.jpg"]
+                      </code>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-foreground">Empty (no gallery):</p>
+                      <code className="block rounded bg-surface px-2 py-1 text-xs text-muted-foreground select-all">
+                        []
+                      </code>
+                    </div>
+                  </div>
+                </details>
               </div>
 
               <div>

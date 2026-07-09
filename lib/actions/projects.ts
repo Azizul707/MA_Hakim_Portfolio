@@ -26,6 +26,8 @@ const projectSchema = z.object({
   category: z.string().max(100).default(""),
   short_description: z.string().min(1, "Short description is required").max(500),
   cover_image: z.string().max(500).default(""),
+  hero_image: z.string().max(500).default(""),
+  gallery_images: z.string().max(10000).default("[]"),
   github_url: z.string().max(500).default(""),
   live_demo_url: z.string().max(500).default(""),
   featured: z.boolean().default(false),
@@ -60,6 +62,23 @@ function slugify(text: string): string {
     .replace(/--+/g, "-")
     .trim()
     .replace(/^-|-$/g, "");
+}
+
+// ─── Flagship Projects (handcrafted — CMS cannot modify) ────────────────
+
+const FLAGSHIP_SLUGS = new Set([
+  "hvac-lead-intelligence",
+  "whatsapp-customer-hub",
+  "document-intelligence-system",
+]);
+
+function isFlagship(slug: string): boolean {
+  return FLAGSHIP_SLUGS.has(slug);
+}
+
+function isFlagshipById(projects: Project[], id: string): boolean {
+  const project = projects.find((p) => p.id === id);
+  return project ? isFlagship(project.slug) : false;
 }
 
 // ─── Projects CRUD ───────────────────────────────────────────────────────
@@ -175,9 +194,26 @@ export async function createProject(
     };
   }
 
+  if (isFlagship(parsed.data.slug)) {
+    return {
+      success: false,
+      message: "Cannot create projects with reserved slugs.",
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
+
+  // Parse gallery_images JSON
+  let gallery: string[] = [];
+  try {
+    gallery = JSON.parse(parsed.data.gallery_images || "[]");
+  } catch {
+    return { success: false, message: "Gallery images must be valid JSON." };
+  }
+
   const insertData: Record<string, unknown> = {
     ...parsed.data,
+    gallery_images: gallery,
     published_at:
       parsed.data.status === "published" ? new Date().toISOString() : null,
   };
@@ -215,6 +251,18 @@ export async function updateProject(
   id: string,
   data: Partial<ProjectFormData>
 ): Promise<ProjectActionResponse> {
+  const existing = await getProjectById(id);
+  if (!existing) {
+    return { success: false, message: "Project not found." };
+  }
+
+  if (isFlagship(existing.slug)) {
+    return {
+      success: false,
+      message: "Flagship projects cannot be modified through the CMS.",
+    };
+  }
+
   const parsed = projectSchema.partial().safeParse(data);
   if (!parsed.success) {
     return {
@@ -223,7 +271,23 @@ export async function updateProject(
     };
   }
 
+  if (parsed.data.slug && isFlagship(parsed.data.slug)) {
+    return {
+      success: false,
+      message: "Cannot change a project slug to a reserved slug.",
+    };
+  }
+
   const updateData: Record<string, unknown> = { ...parsed.data };
+
+  // Parse gallery_images JSON if provided
+  if (typeof updateData.gallery_images === "string") {
+    try {
+      updateData.gallery_images = JSON.parse(updateData.gallery_images as string);
+    } catch {
+      return { success: false, message: "Gallery images must be valid JSON." };
+    }
+  }
 
   // Set published_at when publishing, clear when unpublishing
   if (updateData.status === "published") {
@@ -269,6 +333,18 @@ export async function updateProject(
 }
 
 export async function archiveProject(id: string): Promise<ProjectActionResponse> {
+  const existing = await getProjectById(id);
+  if (!existing) {
+    return { success: false, message: "Project not found." };
+  }
+
+  if (isFlagship(existing.slug)) {
+    return {
+      success: false,
+      message: "Flagship projects cannot be archived through the CMS.",
+    };
+  }
+
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from("projects")
@@ -294,13 +370,19 @@ export async function archiveProject(id: string): Promise<ProjectActionResponse>
 export async function duplicateProject(
   id: string
 ): Promise<ProjectActionResponse> {
-  const supabase = await createServerSupabaseClient();
-
-  // Get the original project
   const original = await getProjectById(id);
   if (!original) {
     return { success: false, message: "Project not found." };
   }
+
+  if (isFlagship(original.slug)) {
+    return {
+      success: false,
+      message: "Flagship projects cannot be duplicated through the CMS.",
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
 
   // Generate a unique slug
   const baseSlug = slugify(`${original.title}-copy`);
@@ -325,6 +407,8 @@ export async function duplicateProject(
       category: original.category,
       short_description: original.short_description,
       cover_image: original.cover_image,
+      hero_image: original.hero_image,
+      gallery_images: original.gallery_images,
       github_url: original.github_url,
       live_demo_url: original.live_demo_url,
       featured: false,

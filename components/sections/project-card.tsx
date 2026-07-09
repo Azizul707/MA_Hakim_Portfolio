@@ -8,30 +8,19 @@ import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-export interface ProjectCardData {
-  title: string;
-  slug: string;
-  category: string;
-  short_description: string;
-  cover_image: string | null;
-  live_demo_url: string | null;
-  technology_stack: string[];
-  featured: boolean;
-}
+import type { Project } from "@/types";
 
 // ─── Image placeholder (swap for <Image> when real assets exist) ─────
 
-function CardCover({ src, alt }: { src?: string | null; alt: string }) {
+function CardCover({ src, alt }: { src?: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  const imageSrc = src ? `/projects/${src.replace(/^\//, "")}` : undefined;
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-surface">
-      {imageSrc && !errored ? (
+      {src && !errored ? (
         <img
-          src={imageSrc}
+          src={src}
           alt={alt}
           loading="lazy"
           onLoad={() => setLoaded(true)}
@@ -53,14 +42,14 @@ function CardCover({ src, alt }: { src?: string | null; alt: string }) {
 // ─── Project Card ────────────────────────────────────────────────────
 
 interface ProjectCardProps {
-  project: ProjectCardData;
+  project: Project;
   index?: number;
 }
 
 export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
   const maxTags = 4;
-  const visibleTags = project.technology_stack.slice(0, maxTags);
-  const extraCount = project.technology_stack.length - maxTags;
+  const visibleTags = project.technologies.slice(0, maxTags);
+  const extraCount = project.technologies.length - maxTags;
 
   return (
     <motion.div
@@ -70,43 +59,39 @@ export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
       transition={{ duration: 0.5, delay: index * 0.05 }}
     >
       <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-all duration-300 hover:border-accent/30 hover:shadow-sm">
-        {/* Entire card is clickable — links to project detail */}
+        {/* Entire card is clickable — links to case study */}
         <Link
           href={`/projects/${project.slug}`}
           className="flex flex-1 flex-col"
         >
           {/* Cover Image */}
           <CardCover
-            src={project.cover_image}
+            src={project.coverImage}
             alt={`${project.title} cover`}
           />
 
           {/* Content */}
           <div className="flex flex-1 flex-col p-5 sm:p-6">
-            {project.category && (
-              <Badge className="mb-2 w-fit">{project.category}</Badge>
-            )}
+            <Badge className="mb-2 w-fit">{project.industry}</Badge>
 
             <h3 className="font-display text-lg font-semibold tracking-tight transition-colors group-hover:text-accent line-clamp-2">
               {project.title}
             </h3>
 
             <p className="mt-1.5 text-sm leading-snug text-muted-foreground line-clamp-2">
-              {project.short_description}
+              {project.summary}
             </p>
 
             {/* Spacer */}
             <div className="flex-1" />
 
             {/* Technology Tags */}
-            {visibleTags.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {visibleTags.map((tech) => (
-                  <Tag key={tech}>{tech}</Tag>
-                ))}
-                {extraCount > 0 && <Tag>+{extraCount}</Tag>}
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {visibleTags.map((tech) => (
+                <Tag key={tech}>{tech}</Tag>
+              ))}
+              {extraCount > 0 && <Tag>+{extraCount}</Tag>}
+            </div>
           </div>
         </Link>
 
@@ -119,7 +104,7 @@ export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
             </Link>
           </Button>
 
-          {project.live_demo_url && (
+          {project.primaryAction && (
             <Button
               asChild
               variant="secondary"
@@ -127,13 +112,13 @@ export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
               className="flex-1"
             >
               <a
-                href={project.live_demo_url}
+                href={project.primaryAction.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                Live Demo
+                {project.primaryAction.label}
               </a>
             </Button>
           )}

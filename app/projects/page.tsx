@@ -6,7 +6,7 @@ import { Container, Section } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { ProjectsGrid } from "@/components/sections/projects-grid";
-import type { ProjectCardData } from "@/components/sections/project-card";
+import { MoreProjectsGrid } from "@/components/sections/more-projects-grid";
 import { getProjectsForPublic } from "@/lib/actions/projects";
 import { ArrowRight } from "lucide-react";
 
@@ -17,10 +17,19 @@ export const metadata: Metadata = {
 };
 
 export default async function ProjectsPage() {
-  let projects: ProjectCardData[] = [];
+  let dbProjects: Array<{
+    title: string;
+    slug: string;
+    category: string;
+    short_description: string;
+    cover_image: string | null;
+    live_demo_url: string | null;
+    technology_stack: string[];
+    featured: boolean;
+  }> = [];
   try {
     const raw = await getProjectsForPublic();
-    projects = (raw ?? []).map((p: any) => ({
+    dbProjects = (raw ?? []).map((p: any) => ({
       title: p.title,
       slug: p.slug,
       category: p.category || "",
@@ -31,7 +40,7 @@ export default async function ProjectsPage() {
       featured: p.featured,
     }));
   } catch {
-    projects = [];
+    // Projects table may not exist yet — render without DB projects
   }
 
   return (
@@ -56,7 +65,10 @@ export default async function ProjectsPage() {
               </p>
             </div>
 
-            <ProjectsGrid projects={projects} />
+            <ProjectsGrid />
+
+            {/* More Projects — database-driven */}
+            <MoreProjectsGrid dbProjects={dbProjects} />
           </Container>
         </Section>
 

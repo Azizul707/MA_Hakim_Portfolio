@@ -15,6 +15,8 @@ export interface Project {
   category: string;
   short_description: string;
   cover_image: string | null;
+  hero_image: string | null;
+  gallery_images: string[];
   github_url: string | null;
   live_demo_url: string | null;
   featured: boolean;
@@ -29,6 +31,8 @@ export interface ProjectFormData {
   category: string;
   short_description: string;
   cover_image: string;
+  hero_image: string;
+  gallery_images: string;
   github_url: string;
   live_demo_url: string;
   featured: boolean;

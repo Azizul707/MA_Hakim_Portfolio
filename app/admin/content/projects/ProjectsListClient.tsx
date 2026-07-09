@@ -16,6 +16,7 @@ import {
   Inbox,
   ArrowUp,
   ArrowDown,
+  ShieldAlert,
 } from "lucide-react";
 import type { Project } from "@/types/project";
 import {
@@ -29,6 +30,12 @@ import {
   archiveProject,
   duplicateProject,
 } from "@/lib/actions/projects";
+
+const FLAGSHIP_SLUGS = new Set([
+  "hvac-lead-intelligence",
+  "whatsapp-customer-hub",
+  "document-intelligence-system",
+]);
 
 interface ProjectsListClientProps {
   initialProjects: Project[];
@@ -188,135 +195,175 @@ export function ProjectsListClient({
                   </td>
                 </tr>
               ) : (
-                filtered.map((project) => (
-                  <tr
-                    key={project.id}
-                    className="group cursor-pointer h-[52px] transition-colors hover:bg-muted/30"
-                  >
-                    <td className="px-4 py-2">
-                      <Link
-                        href={`/admin/content/projects/${project.id}`}
-                        className="flex items-center gap-3"
-                        tabIndex={-1}
-                      >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-xs font-semibold text-accent">
-                          {project.title.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium leading-tight">
-                            {project.title}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground leading-tight">
-                            /{project.slug}
-                          </p>
-                        </div>
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2">
-                      <StatusBadge status={project.status} />
-                    </td>
-                    <td className="px-4 py-2">
-                      {project.featured ? (
-                        <span className="text-xs font-medium text-accent">
-                          Featured
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          —
-                        </span>
+                filtered.map((project) => {
+                  const isFlagship = FLAGSHIP_SLUGS.has(project.slug);
+                  return (
+                    <tr
+                      key={project.id}
+                      className={cn(
+                        "group h-[52px] transition-colors hover:bg-muted/30",
+                        isFlagship ? "cursor-default" : "cursor-pointer"
                       )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                        {project.display_order}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-2 text-xs text-muted-foreground">
-                      {formatDate(project.created_at)}
-                    </td>
-                    <td className="px-4 py-2 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    >
+                      <td className="px-4 py-2">
                         <Link
-                          href={`/admin/content/projects/${project.id}`}
-                          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                          aria-label="Edit project"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Link>
-
-                        {project.status !== "published" && (
-                          <button
-                            onClick={() =>
-                              handleAction(() =>
-                                updateProject(project.id, {
-                                  status: "published",
-                                } as any)
-                              )
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                            aria-label="Publish"
-                            disabled={isPending}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-
-                        {project.status === "published" && (
-                          <button
-                            onClick={() =>
-                              handleAction(() =>
-                                updateProject(project.id, {
-                                  status: "draft",
-                                } as any)
-                              )
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                            aria-label="Unpublish"
-                            disabled={isPending}
-                          >
-                            <EyeOff className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() =>
-                            handleAction(() => duplicateProject(project.id))
+                          href={
+                            isFlagship
+                              ? "/admin/content/projects"
+                              : `/admin/content/projects/${project.id}`
                           }
-                          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                          aria-label="Duplicate"
-                          disabled={isPending}
+                          className="flex items-center gap-3"
+                          tabIndex={-1}
+                          onClick={(e) => isFlagship && e.preventDefault()}
                         >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-
-                        {project.status !== "archived" && (
-                          <button
-                            onClick={() =>
-                              handleAction(() => archiveProject(project.id))
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                            aria-label="Archive"
-                            disabled={isPending}
+                          <div
+                            className={cn(
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold",
+                              isFlagship
+                                ? "bg-amber-500/10 text-amber-500"
+                                : "bg-accent/10 text-accent"
+                            )}
                           >
-                            <Archive className="h-3.5 w-3.5" />
-                          </button>
+                            {isFlagship ? (
+                              <ShieldAlert className="h-4 w-4" />
+                            ) : (
+                              project.title.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium leading-tight">
+                              {project.title}
+                              {isFlagship && (
+                                <span className="ml-2 inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-500">
+                                  flagship
+                                </span>
+                              )}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground leading-tight">
+                              /{project.slug}
+                            </p>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">
+                        <StatusBadge status={project.status} />
+                      </td>
+                      <td className="px-4 py-2">
+                        {project.featured ? (
+                          <span className="text-xs font-medium text-accent">
+                            Featured
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                          {project.display_order}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2 text-xs text-muted-foreground">
+                        {formatDate(project.created_at)}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          {isFlagship ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 text-[11px] font-medium text-amber-500">
+                              <ShieldAlert className="h-3 w-3" />
+                              Protected
+                            </span>
+                          ) : (
+                            <>
+                              <Link
+                                href={`/admin/content/projects/${project.id}`}
+                                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                                aria-label="Edit project"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
 
-                        {project.status === "published" && (
-                          <a
-                            href={`/projects/${project.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-                            aria-label="View on site"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                              {project.status !== "published" && (
+                                <button
+                                  onClick={() =>
+                                    handleAction(() =>
+                                      updateProject(project.id, {
+                                        status: "published",
+                                      } as any)
+                                    )
+                                  }
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                                  aria-label="Publish"
+                                  disabled={isPending}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+
+                              {project.status === "published" && (
+                                <button
+                                  onClick={() =>
+                                    handleAction(() =>
+                                      updateProject(project.id, {
+                                        status: "draft",
+                                      } as any)
+                                    )
+                                  }
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                                  aria-label="Unpublish"
+                                  disabled={isPending}
+                                >
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() =>
+                                  handleAction(() =>
+                                    duplicateProject(project.id)
+                                  )
+                                }
+                                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                                aria-label="Duplicate"
+                                disabled={isPending}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
+
+                              {project.status !== "archived" && (
+                                <button
+                                  onClick={() =>
+                                    handleAction(() =>
+                                      archiveProject(project.id)
+                                    )
+                                  }
+                                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                                  aria-label="Archive"
+                                  disabled={isPending}
+                                >
+                                  <Archive className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </>
+                          )}
+
+                          {project.status === "published" && (
+                            <a
+                              href={`/projects/${project.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                              aria-label="View on site"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
