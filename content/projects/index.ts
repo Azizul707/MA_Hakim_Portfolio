@@ -45,7 +45,7 @@ export const projects: import("@/types").Project[] = [
     coverImage: "/projects/whatsapp-customer-hub/cover.webp",
     primaryAction: {
       label: "Live Project",
-      url: "https://amarchat.vercel.app",
+      url: "https://www.amarchat.xyz/",
     },
     technologies: ["Next.js", "TypeScript", "Supabase", "Tailwind", "WhatsApp", "n8n", "OpenAI"],
     featured: true,
